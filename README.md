@@ -9,7 +9,7 @@ Video prediction is a pixel-wise dense prediction task to infer future frames ba
 ## Result show
 --------------------------------------------------------------------------------------------
 
-![image](https://github.com/Bei-Jin/STMFANet/blob/master/videos/6645.gif)
+![image](https://github.com/Bei-Jin/STMFANet/blob/master/videos/6645-teaser.gif)
 
 
 
