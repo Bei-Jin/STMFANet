@@ -1,3 +1,4 @@
+#This part of the code refers to the work of https://github.com/sunxm2357/mcnet_pytorch/. Thanks!
 import argparse
 import os
 from util.util import *
@@ -40,5 +41,77 @@ class BaseOptions():
         self.parser.add_argument('--max_dataset_size', type=int, default=float("inf"), help='Maximum number of samples allowed per dataset. If the dataset directory contains more than max_dataset_size, only a subset is loaded.')
 
         self.initialized = True
-        
-        
+        def parse(self):
+            if not self.initialized:
+                self.initialize()
+            self.opt = self.parser.parse_args()
+            self.opt.is_train = self.is_train   # train or test
+            if len(self.opt.image_size) == 1:
+                a = self.opt.image_size[0]
+                self.opt.image_size.append(a)
+            
+            str_ids = self.opt.gpu_ids.split(',')
+            self.opt.gpu_ids = []
+            for str_id in str_ids:
+                id = int(str_id)
+                if id >= 0:
+                    self.opt.gpu_ids.append(id)
+            # set gpu ids
+            if len(self.opt.gpu_ids) > 0:
+                torch.cuda.set_device(self.opt.gpu_ids[0])
+
+            args = vars(self.opt)
+            
+            print('------------ Options -------------')
+            for k, v in sorted(args.items()):
+                print('%s: %s' % (str(k), str(v)))
+            print('-------------- End ----------------')
+            
+            # save to the disk
+            expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name)
+            makedir(expr_dir)
+            vis_dir = os.path.join(self.opt.visualize_dir, self.opt.name)
+            makedir(vis_dir)
+            tb_dir = os.path.join(self.opt.tensorboard_dir, self.opt.name)
+            makedir(tb_dir)
+            
+            if not self.is_train:
+                self.opt.serial_batches = True
+                self.opt.video_list = 'test_data_list.txt'
+                self.opt.quant_dir = os.path.join(self.opt.result_dir, 'quantitative', self.opt.data, self.opt.name + '_' + self.opt.which_epoch)
+                makedir(self.opt.quant_dir)
+                self.opt.save_dir = os.path.join(self.opt.result_dir, 'images', self.opt.data, self.opt.name + '_' + self.opt.which_epoch)
+                makedir(self.opt.save_dir)
+                
+            file_name = os.path.join(expr_dir, 'opt.txt')
+            with open(file_name, 'wt') as opt_file:
+                opt_file.write('------------ Options -------------\n')
+                for k, v in sorted(args.items()):
+                    opt_file.write('%s: %s\n' % (str(k), str(v)))
+                opt_file.write('-------------- End ----------------\n')
+                            
+            if self.is_train:
+                self.opt.video_list = 'train_data_list.txt'
+                if self.opt.debug:
+                    self.opt.print_freq = 1
+                    self.opt.save_epoch_freq = 1
+                    self.opt.display_freq = 1
+                    self.opt.pick_mode = "First"
+                    self.opt.save_latest_freq = 1
+                self.val_opt = copy.deepcopy(self.opt)
+                self.val_opt.serial_batches = True
+                self.val_opt.video_list = 'val_data_list.txt'
+                self.val_opt.batch_size = 1
+                self.val_opt.is_train = False
+                self.val_opt.which_epoch = 'latest'
+                if self.opt.data == 'KTH':
+                    self.val_opt.pick_mode = 'Slide'
+                    self.val_opt.T = self.opt.T * 2
+                
+                if self.opt.debug:
+                    self.val_opt.pick_mode = 'First'
+                return self.opt, self.val_opt
+            else:
+                return self.opt  
+
+              
