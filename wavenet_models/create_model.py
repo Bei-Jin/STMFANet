@@ -1,10 +1,7 @@
-
 def create_model(opt):
-    model = None
-    print(opt.model)
-    if opt.model == 'wavenet':
-        from .wavenet_model import WavenetModel
-        model = WavenetModel()
+    if opt.model == 'STMF':
+        from .STMF_Model import STMFModel
+        model = STMFModel()
     else:
         raise ValueError("Model [%s] not recognized."% opt.model)
 
